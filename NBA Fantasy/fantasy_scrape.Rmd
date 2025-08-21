@@ -1,0 +1,201 @@
+---
+title: "Darko FPTS Ranker 2024"
+author: "Enzo Moraes Mescall"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(jsonlite)
+library(httr)
+library(hoopR)
+```
+
+Scraping the table from the free agents page on ESPN Fantasy Basketball
+
+Url example: https://lm-api-reads.fantasy.espn.com/apis/v3/games/fba/seasons/2025/segments/0/leagues/44216028?scoringPeriodId=28&view=kona_player_info
+
+```{r}
+# Read cookie string from file
+cookie = readLines("cookie.txt")
+```
+
+
+```{r}
+# Trying to co-opt the API to get the data
+# Building the get request
+api_url = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/fba/seasons/2025/segments/0/leagues/44216028?scoringPeriodId=28&view=kona_player_info"
+headers <- c(
+  "Host" = "lm-api-reads.fantasy.espn.com",
+  "User-Agent" = "Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0",
+  "Accept" = "application/json",
+  "Accept-Languag" = "en-US,en;q=0.5",
+  "Accept-Encoding" = "gzip, deflate, br, zstd",
+  "Referer" = "https://fantasy.espn.com/",
+  "Origin" = "https://fantasy.espn.com",
+  "Connection" = "keep-alive",
+  "Cookie" = cookie, # Fantasy Football Cookie
+  "Sec-Fetch-Dest" = "empty",
+  "Sec-Fetch-Mode" = "no-cors",
+  "Sec-Fetch-Site" = "same-site",
+  "TE" = "trailers",
+  "X-Fantasy-Source" = "kona",
+  'X-Fantasy-Filter' = '{"players":{"filterSlotIds":{"value":[0,1,2,3,4,5,6,7,8,9,10,11]},"filterRanksForScoringPeriodIds":{"value":[28]},"limit":200,"offset":0,"sortPercOwned":{"sortAsc":false,"sortPriority":1},"sortDraftRanks":{"sortPriority":100,"sortAsc":true,"value":"STANDARD"},"filterRanksForRankTypes":{"value":["STANDARD"]},"filterStatsForTopScoringPeriodIds":{"value":5,"additionalValue":["002025","102025","002024","012025","022025","032025","042025"]}}}',
+  "X-Fantasy-Platform" ="kona-PROD-c495d34b311913252eb42e5284fe45c2a8cfbdc5",
+  "If-None-Match" = "0cc498c39945c5650aea786044f744674",
+  "Priority" = "u=4",
+  "Pragma" = "no-cache",
+  "Cache-Control" = "no-cache"
+)
+```
+
+```{r}
+# Send GET request with headers
+response <- GET(url = api_url, add_headers(.headers = headers))
+
+# Check the status of the request
+if (http_status(response)$category == "Success") {
+  cat("Request successful!")
+} else {
+  stop("Request failed: ", http_status(response)$message)
+}
+
+# Parse JSON response
+response_content <- content(response, as = "text", encoding = "UTF-8")
+parsed_data <- fromJSON(response_content, flatten = TRUE)
+
+# Convert to a data frame
+player_data <- as.data.frame(parsed_data)
+
+# Preview data
+head(player_data)
+```
+
+```{r}
+# For every row in player data, get the player stats for the current season and append the df
+player_data <- player_data %>%
+  mutate(stats = map(players.id, ~espn_nba_player_stats(athlete_id = .x, year = 2025, season_type = "regular", total = FALSE))) %>%
+  unnest(stats)
+```
+
+```{r}
+# Declare values
+
+fFGM = 2
+fFGA = -1
+fFTM = 1
+fFTA = -1 
+f3PM = 1
+fREB = 1
+fAST = 2
+fSTL = 4
+fBLK = 4
+fTO = -2
+fPTS = 1
+```
+
+fFGM = offensive_avg_field_goals_made
+fFGA = offensive_avg_field_goals_attempted
+fFTM = offensive_avg_free_throws_made
+fFTA = offensive_avg_free_throws_attempted 
+f3PM = offensive_avg_three_point_field_goals_made`
+fREB = general_avg_rebounds 
+fAST = offensive_avg_assists
+fSTL = defensive_avg_steals
+fBLK = defensive_avg_blocks
+fTO = offensive_avg_turnovers
+fPTS = offensive_avg_poins
+
+
+Team ids:
+FA = 0
+BRZY = 1
+NYE = 2
+ARL = 3
+VERG = 5
+ASS = 6
+ZADY = 7
+ENZO = 8
+CHAP = 9
+GSW = 10
+ITPG = 11
+
+```{r}
+# Team mapping
+tid = c("FA",   #0
+        "BRZY", #1
+        "NYE",  #2
+        "ARL",  #3
+        "NO TEAM", #4
+        "VERG", #5
+        "ASS",  #6
+        "ZADY", #7
+        "ENZO", #8
+        "CHAP", #9
+        "GSW",  #10
+        "ITPG") #11
+```
+
+
+```{r}
+player_fpts = player_data %>%
+  mutate(fantasy_points = offensive_avg_field_goals_made * fFGM +
+           offensive_avg_field_goals_attempted *fFGA +
+           offensive_avg_free_throws_made * fFTM +
+           offensive_avg_free_throws_attempted * fFTA +
+           offensive_avg_three_point_field_goals_made * f3PM +
+           general_avg_rebounds * fREB +
+           offensive_avg_assists * fAST +
+           defensive_avg_steals * fSTL +
+           defensive_avg_blocks * fBLK +
+           offensive_avg_turnovers * fTO +
+           offensive_avg_points * fPTS,
+         fantasy_team = map(players.onTeamId, ~tid[.x + 1])) %>%
+  arrange(-fantasy_points) %>%
+  select(general_avg_minutes, players.player.fullName, fantasy_team, players.onTeamId, fantasy_points, offensive_avg_field_goals_made, offensive_avg_field_goals_attempted, offensive_avg_free_throws_made, offensive_avg_free_throws_attempted, offensive_avg_three_point_field_goals_made, general_avg_rebounds, offensive_avg_assists, defensive_avg_steals, defensive_avg_blocks, offensive_avg_turnovers, offensive_avg_points)
+```
+
+```{r}
+darko_box_url = "https://apanalytics.shinyapps.io/DARKO/_w_9c172727/session/604cdddde8113ceaa56139c35d889b12/download/download_daily?w=9c172727"
+darko_box_api = read.csv(darko_box_url)
+darko_pct_url = "https://apanalytics.shinyapps.io/DARKO/_w_9c172727/session/604cdddde8113ceaa56139c35d889b12/download/download_talent?w=9c172727"
+darko_pct_api = read.csv(darko_pct_url)
+```
+
+```{r}
+darko_full_api = darko_box_api %>%
+  inner_join(darko_pct_api, by = join_by(Player == Player)) %>%
+  mutate(Player = gsub("[[:punct:]]", "", Player)) %>%
+  mutate(Player = gsub("^(\\w+\\s+\\w+).*", "\\1", Player)) %>%
+  mutate(FGM = FGA * FG2.) %>%
+  mutate(FTM = FTA * FT.) %>%
+  mutate(FG3M = FG3A * FG3.)  %>%
+  mutate(Player = str_trim(Player)) %>%
+  select(Player, Minutes, FGM, FGA, FTM, FTA, FG3M, DREB, OREB, AST, STL, BLK, TOV, PTS, Experience.x)
+```
+
+
+```{r}
+darko_fpts_api = darko_full_api %>%
+  mutate(DARKO_FPTS = fFGM * FGM + fFGA * FGA + fFTM * FTM + fFTA * FTA +
+           f3PM * FG3M + fREB * (DREB + OREB) + fAST * AST + fSTL * STL +
+           fBLK * BLK + fTO * TOV + fPTS * PTS) %>%
+  arrange(-DARKO_FPTS) %>%
+  select(Player, DARKO_FPTS, PTS, everything())
+```
+
+```{r}
+# Join player points and darko points
+final_df = player_fpts %>%
+  mutate(players.player.fullName = gsub("[[:punct:]]", "", players.player.fullName)) %>%
+  mutate(players.player.fullName = gsub("^(\\w+\\s+\\w+).*", "\\1", players.player.fullName)) %>%
+  inner_join(darko_fpts_api, by = c("players.player.fullName" = "Player")) %>%
+  mutate(DARKO_FPTS = DARKO_FPTS * general_avg_minutes/Minutes) %>%
+  mutate(DIFF = fantasy_points - DARKO_FPTS) %>% 
+  select(players.player.fullName, fantasy_team, fantasy_points, DARKO_FPTS, DIFF, everything())
+```

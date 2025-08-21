@@ -1,0 +1,92 @@
+---
+title: "Darko to Fantasy Points"
+author: "Enzo Moraes Mescall"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+# Read data
+darko_box = read.csv("DARKO_daily_projections_2023-12-10.csv")
+darko_pct = read.csv("DARKO_player_talent_2023-12-10.csv")
+espn_csv = read.csv("ESPN_daily_projections.csv")
+```
+
+```{r}
+espn_box <- espn_csv %>%
+  mutate(PLAYER = gsub("DTD", "", PLAYER)) %>%
+  mutate(PLAYER = gsub("[[:punct:]]", "", PLAYER)) %>%
+  mutate(PLAYER = gsub("^(\\w+\\s+\\w+).*", "\\1", PLAYER)) %>%
+  rename(Player = PLAYER) %>%
+  select(-c(RANK, GP, A.)) %>%
+  mutate_at(vars(-Player), as.numeric)  %>%
+  mutate(Player = str_trim(Player))
+
+# Combined dataset
+darko_full = darko_box %>%
+  inner_join(darko_pct, by = join_by(Player == Player)) %>%
+  mutate(Player = gsub("[[:punct:]]", "", Player)) %>%
+  mutate(Player = gsub("^(\\w+\\s+\\w+).*", "\\1", Player)) %>%
+  mutate(FGM = FGA * FG2.) %>%
+  mutate(FTM = FTA * FT.) %>%
+  mutate(FG3M = FG3A * FG3.)  %>%
+  mutate(Player = str_trim(Player))
+```
+
+
+## Translate stats into fantasy points
+
+```{r}
+# Declare values
+fFGM = 2
+fFGA = -1
+fFTM = 1
+fFTA = -1 
+f3PM = 1
+fREB = 1
+fAST = 2
+fSTL = 4
+fBLK = 4
+fTO = -2
+fPTS = 1
+```
+
+```{r}
+darko_fpts = darko_full %>%
+  mutate(DARKO_FPTS = fFGM * FGM + fFGA * FGA + fFTM * FTM + fFTA * FTA +
+           f3PM * FG3M + fREB * (DREB + OREB) + fAST * AST + fSTL * STL +
+           fBLK * BLK + fTO * TOV + fPTS * PTS) %>%
+  select(Player, DARKO_FPTS) %>%
+  arrange(-DARKO_FPTS)
+```
+
+```{r}
+espn_fpts = espn_box %>%
+  mutate(ESPN_FPTS = fFGM * FGM + fFGA * FGA + fFTM * FTM + fFTA * FTA +
+           f3PM * X3PM + fREB * REB + fAST * AST + fSTL * STL +
+           fBLK * BLK + fTO * TO + fPTS * PTS) %>%
+  select(Player, ESPN_FPTS) %>%
+  arrange(-ESPN_FPTS)
+```
+
+```{r}
+comparison = darko_fpts %>%
+  full_join(espn_fpts, by = join_by(Player == Player)) %>%
+  mutate(delta = ESPN_FPTS - DARKO_FPTS) %>%
+  mutate(delta_pct = delta/(ESPN_FPTS+0.1))
+```
+
+```{r}
+my_team = c("Dejounte Murray", "Anthony Edwards", "Paolo Banchero", "Chet Holmgren", "Nikola Vucevic", "Mikal Bridges", "Klay Thompson", "Julius Randle", "Darius Garland", "Derrick White", "Paul George", "Kelly Oubre Jr", "DeAndre Hunter", "Bradley Beal")
+
+my_team_fpts = comparison %>%
+  filter(Player %in% my_team) 
+```
