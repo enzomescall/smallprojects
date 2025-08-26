@@ -3,6 +3,15 @@ import time
 import pyautogui as py
 from datetime import datetime
 
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def read_text_file(filename):
+    filepath = os.path.join(BASE_DIR, filename)
+    with open(filepath, "r") as f:
+        return f.read().splitlines()
+
 def find_paths(gridsize, length):
     def is_valid_move(x, y):
         return 0 <= x < gridsize and 0 <= y < gridsize
@@ -59,11 +68,6 @@ def get_parameters():
 
 
     return topleft, bottomright, x, longest, grid
-
-def read_text_file(filename):
-    file = open(filename, "r")
-    words = file.read().split("\n")
-    return words
 
 def optimize_dictionary(letter_grid, word_dictionary):
     return word_dictionary
@@ -144,7 +148,8 @@ def run_game(topleft, bottomright, x, longest, letter_grid, word_dictionary):
                 for i in range(len(path)):
                     py.moveTo(grid[path[i][0]][path[i][1]])
                 py.mouseUp()
-            # else:
+            # else:n
+            
             #     # Sleep for a second to keep from overheating
             #     time.sleep(0.01)
 
@@ -156,13 +161,13 @@ if __name__ == "__main__":
         bottomright = (856, 693)
         x = 4
         longest = 8
-        letter_grid = ["epse", "ruud", "abbo", "nlyx"]
+        letter_grid = ["eclk", "ruud", "abbo", "nlyx"]
 
         word_dictionary = read_text_file("words.txt")
 
         run_game(topleft, bottomright, x, longest, letter_grid, word_dictionary)
 
-    topleft, bottomright, x, longest, letter_grid = get_parameters()
+    topleft, bottomright, x, longest, letter_grid = get_parameters() # type: ignore
 
     word_dictionary = read_text_file("words.txt")
     run_game(topleft, bottomright, x, longest, letter_grid, word_dictionary)
