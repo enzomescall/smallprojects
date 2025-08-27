@@ -55,13 +55,12 @@ def find_words_on_board(
     trie: Trie,
     min_len: int,
     max_len: int,
-    return_paths: bool = True
 ) -> Tuple[Set[str], Dict[str, List[Tuple[int,int]]]]:
     """
     board: list of equal-length strings, e.g. ["evcr","itet","cprp","esoe"]
     returns:
         words: set of found words (lowercase)
-        paths: map word -> one path list of (r,c) positions (if return_paths=True)
+        paths: map word -> one path list of (r,c) positions
     """
     if not board:
         return set(), {}
@@ -94,10 +93,10 @@ def find_words_on_board(
         if len(prefix) >= min_len and len(prefix) <= max_len and trie.has_word(prefix):
             if prefix not in found:
                 found.add(prefix)
-                if return_paths:
-                    # store one path; convert to (r,c)
-                    rc_path = [(p // cols, p % cols) for p in path]
-                    paths[prefix] = rc_path
+                
+                # store one path; convert to (r,c)
+                rc_path = [(p // cols, p % cols) for p in path]
+                paths[prefix] = rc_path
 
         if len(prefix) == max_len:
             return  # can't grow further
@@ -118,11 +117,7 @@ def find_words_on_board(
             dfs(start, grid[r][c], [start])
             visited[start] = False
 
-    return (found, paths if return_paths else {})
-
-# -----------------------
-# Example usage
-# -----------------------
+    return found, paths
 
 if __name__ == "__main__":
     board = [
@@ -135,10 +130,9 @@ if __name__ == "__main__":
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     WORDS_PATH = os.path.join(BASE_DIR, "words.txt")
 
-
     MIN_L, MAX_L = 3, 8
     trie = build_trie_from_file(WORDS_PATH, min_len=MIN_L, max_len=MAX_L)
-    words, paths = find_words_on_board(board, trie, MIN_L, MAX_L, return_paths=True)
+    words, paths = find_words_on_board(board, trie, MIN_L, MAX_L)
 
     # show a few results
     print(f"found {len(words)} words")

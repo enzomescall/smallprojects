@@ -1,6 +1,6 @@
 import time
 import pyautogui as py
-from typing import List, Tuple, Iterable, Set
+from typing import List, Tuple, Iterable, Dict
 
 
 py.FAILSAFE = True          
@@ -20,7 +20,7 @@ def _grid_centers(
         raise ValueError("x must be >= 2")
 
     step_x = (brx - tlx) / (x - 1)
-    step_y = (tly - bry) / (x - 1)
+    step_y = (bry - tly) / (x - 1)
 
     grid = []
     for i in range(x):
@@ -31,9 +31,6 @@ def _grid_centers(
             row.append((cx, cy))
         grid.append(row)
     return grid
-
-def _word_from_path(letter_grid: List[str], path: Iterable[Tuple[int, int]]) -> str:
-    return ''.join(letter_grid[r][c] for r, c in path)
 
 def _grid_path_to_coords(
     coord_grid: List[List[Tuple[int, int]]],
@@ -77,7 +74,7 @@ def _move_mouse_path(
     finally:
         py.mouseUp(button=hold_button)
 
-def select_word(
+def select_words(
     topleft: Tuple[int, int],
     bottomright: Tuple[int, int],
     letter_per_row: int,
@@ -95,44 +92,15 @@ def select_word(
         path_coords = _grid_path_to_coords(coords_grid, path)
         _move_mouse_path(path_coords, hold_button, per_step_duration)
 
-
-def get_parameters():
-    py.FAILSAFE = True
-
-    print("in 2 seconds place mouse on top left square") 
-    time.sleep(2)
-    topleft = py.position()
-
-    print("in 2 seconds place mouse on bottom right square")
-    time.sleep(2)
-    bottomright = py.position()
-
-    print("How wide is the square?")
-    x = int(input())
-
-    grid = []
-    for i in range(0, int(x)):
-        print("What letters in row " + str(i+1) + "?")
-        row = input()
-
-        if len(row) == int(x):
-            grid.append(row)
-        else:
-            print("Error: row length does not match grid size")
-            return None
-
-    print("How many letters in the longest word?")
-    longest = int(input())
-
-
-    return topleft, bottomright, x, longest, grid
-
 if __name__ == "__main__":
     # we gotta test these out
-    topleft = (672, 337)
-    bottomright = (964, 61)
+    topleft = (598, 368)
+    bottomright = (882, 94)
     x = 4
 
+    from utils import get_parameters_mouse
+    topleft, bottomright, x, longest, grid = get_parameters_mouse() # type: ignore
+    
     grid = _grid_centers(topleft, bottomright, x)
     print(f"grid: {grid}")
 
@@ -143,4 +111,4 @@ if __name__ == "__main__":
 
     print("testing big function")
 
-    select_word(topleft, bottomright, 4, [test_path])
+    select_words(topleft, bottomright, 4, [test_path])
