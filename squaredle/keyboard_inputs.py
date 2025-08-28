@@ -1,36 +1,34 @@
+import time
+from datetime import datetime
 import pyautogui as py
-from typing import List, Dict, Tuple
+from typing import List, Dict, Set
 
-# given grid and path, type it out
+def type_words(words: Set[str], interval: float = 0):
+    for word in words:
+        print(f"{datetime.now().strftime('%H:%M:%S')} - Inputting {word}")
+        py.typewrite(word, interval=interval)
+        py.press("enter")
 
-# given coords, find input sequence
-# -> turn the board into List[List[Dict[char, int]]]
-# -> Array of dicts, storing the character and which iteration it is
+"""
+Depracated helper functions since we can literally just type out the words and the game will understand
+"""
 
 def _board_to_dict(board: List[str]) -> List[List[Dict[str,int]]]:
     board_dict = [[{}]]
 
     return board_dict
 
-def _keyboard_instruction(instruction: Dict[str, int]):
-    key = next(iter(instruction)) # gets the first key
-    presses = instruction[key] + 1 # key ocorrunces are indexed at 0
-    for i in range(presses):
-        # get pyautogui to press the keyboard this many times
-
-
-def type_words(board: List[str], paths: List[List[Tuple[int,int]]]):
-    board_dict = _board_to_dict(board)
-    
-    for path in paths:
-        # Path is a List[Tuple[int,int]]
-        # aka list of board coordinates
-        for step in path:
-            x,y = step
-            instruction = board_dict[x][y]
-            _keyboard_instruction(instruction)
-
-    return
+def _keyboard_instruction(key: str, repetitions: int):
+    """
+    Presses a key and then space certain amount of times
+    """
+    # press key down
+    py.press(key)
+    for i in range(repetitions):
+        # get pyautogui to press space a certain amount of times 
+        py.press(" ")
 
 if __name__ == "__main__":
-    print("test")
+    print("Get your keyboard in position")
+    time.sleep(2)
+    type_words(set(["hello", "my", "name","is"]))

@@ -3,8 +3,9 @@ import os
 from datetime import datetime
 from typing import List, Tuple, Iterable
 
-from utils import get_parameters_mouse, get_parameters_keyboard
+from utils import get_parameters_mouse, get_grid
 from mouse_mover import select_words
+from keyboard_inputs import type_words
 from trie_squaredle import Trie, TrieNode, build_trie_from_file, find_words_on_board
 
 def run_game(WORDS_PATH: str):
@@ -15,15 +16,27 @@ def run_game(WORDS_PATH: str):
         "ezritnelui",
         "dtlryukayt",
         "cnalanotri",
-        "oiclhcili0",
+        "oiclhcilio",
         "jtutacthbs",
         "xtienpsalt",
         "ettoriugye",
         "sdncsenlec",
         "niistiwhyx",
     ]
+    letter_grid = [
+        "rgerirewat",
+        "uodjlfprbe",
+        "angokeoomr",
+        "ruracrrxoe",
+        "bdncfirebw",
+        "laerifbpot",
+        "emrbdryalu",
+        "uotseglctg",
+        "zshgifales",
+        "eaberework",
+    ]
 
-    topleft, bottomright, x, MAX_L, _ = get_parameters_mouse(input_grid=False) # type: ignore
+    x, MAX_L, grid = get_grid(input_grid=False)    
 
     print(f"{datetime.now().strftime('%H:%M:%S')} - Building trie from {WORDS_PATH}")
     
@@ -37,9 +50,15 @@ def run_game(WORDS_PATH: str):
 
     list_paths = list(paths.values())
 
-    # mouse version
-    select_words(topleft, bottomright, x, list_paths)
-    print(f"{datetime.now().strftime('%H:%M:%S')} - Finished traversing {len(paths)} paths")
+    if input("Mouse version (slower?)") == "y":
+        topleft, bottomright = get_parameters_mouse()
+        # mouse version
+        select_words(topleft, bottomright, x, list_paths)
+        print(f"{datetime.now().strftime('%H:%M:%S')} - Finished traversing {len(paths)} paths")
+
+    print("Get your keyboard in position, 2 seconds")
+    time.sleep(2)
+    type_words(words)
 
 
 if __name__ == "__main__":

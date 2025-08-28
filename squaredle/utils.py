@@ -1,6 +1,6 @@
 import pyautogui as py
 import time
-from typing import List
+from typing import List, Tuple
 
 def _input_grid(grid_width: int) -> List[str]:
     grid: List[str] = []
@@ -18,7 +18,7 @@ def _input_grid(grid_width: int) -> List[str]:
         
     return grid
 
-def get_parameters_mouse(input_grid: bool = True):
+def get_parameters_mouse():
     py.FAILSAFE = True
 
     print("in 2 seconds place mouse on top left square") 
@@ -29,18 +29,9 @@ def get_parameters_mouse(input_grid: bool = True):
     time.sleep(2)
     bottomright = py.position()
 
-    print("How wide is the square?")
-    x = int(input())
+    return topleft, bottomright
 
-    print("How many letters in the longest word?")
-    longest: int = int(input())
-
-    if input_grid:
-        return topleft, bottomright, x, longest, _input_grid(x)
-
-    return topleft, bottomright, x, longest, []
-
-def get_parameters_keyboard(input_grid: bool = True):
+def get_grid(input_grid: bool = True):
     print("How wide is the square?")
     x = int(input())
 
