@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "squardle-solver"
+version = "0.1.0"
+description = "CLI solver for Squaredle"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [{name="Enzo Moraes Mescall"}]
+dependencies = []
+
+[project.scripts]
+squardle = "squardle.cli:main"
+
+[tool.setuptools.package-data]
+squardle = ["data/words.txt"]
